@@ -1,89 +1,59 @@
 // src/App.tsx
-import React, { useEffect, useState } from "react";
-import fundConfig from "./config/funds.json";
-import { FundConfig, NAVEntry } from "./types";
+import React from "react";
+import { FundConfig } from "./types";
 import FundConfigUploader from "./components/FundConfigUploader";
-import FundSelector from "./components/FundSelector";
-import FrequencySelector from "./components/FrequencySelector";
-import CustomDateRangePicker from "./components/DateRangePicker";
-import ChartTypeSelector from "./components/ChartTypeSelector";
-import NAVChart from "./components/NAVChart";
-import { filterAndDownsample } from "./utils/navUtils";
-import { Link } from 'react-router-dom';
+import FundDashboard from "./components/FundDashboard";
+import ComparisonPage from "./pages/ComparisonPage";
+import Box from '@mui/material/Box';
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
+import Container from '@mui/material/Container';
+import Paper from '@mui/material/Paper';
 
-const App: React.FC = () => {
-  const [funds, setFunds] = useState<FundConfig[]>(fundConfig);
-  const [selectedFund, setSelectedFund] = useState<string>(fundConfig[0]?.code);
-  const [navFrequency, setNavFrequency] = useState<"daily" | "weekly" | "monthly">("weekly");
-  const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
-  const [navData, setNavData] = useState<NAVEntry[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [chartType, setChartType] = useState<"line" | "bar" | "pie">("line");
+export interface AppProps {
+  funds: FundConfig[];
+  setFunds: React.Dispatch<React.SetStateAction<FundConfig[]>>;
+}
 
-
-  const fetchNAVData = async (schemeCode: string) => {
-    setLoading(true);
-    try {
-      const res = await fetch(`https://api.mfapi.in/mf/${schemeCode}`);
-      const json = await res.json();
-      return json.data.map((item: any) => ({
-        date: item.date,
-        nav: parseFloat(item.nav),
-      }));
-    } catch {
-      alert("Error fetching NAV data.");
-      return [];
-    } finally {
-      setLoading(false);
-    }
-  };
-
-
-  useEffect(() => {
-    if (!dateRange[0] || !dateRange[1]) return;
-    if (!selectedFund) return;
-
-
-    fetchNAVData(selectedFund).then((data) => {
-      const filtered = filterAndDownsample(data, navFrequency, dateRange[0], dateRange[1]);
-      setNavData(filtered);
-    });
-  }, [selectedFund, navFrequency, dateRange]);
-
-
+function TabPanel(props: { children: React.ReactNode; value: number; index: number }) {
+  const { children, value, index, ...other } = props;
   return (
-    <div style={{ maxWidth: 900, margin: "auto", padding: 20 }}>
-      <h3>Mutual Fund NAV Chart Dashboard</h3>
-      
-      <Link to="/compare" style={{ display: 'inline-block', marginBottom: 20 }}>
-        Go to Comparison Page
-      </Link>
-
-      <FundConfigUploader onConfigUpload={cfg => setFunds(cfg)} />
-
-
-      <FundSelector
-        funds={funds}
-        selected={selectedFund}
-        onChange={setSelectedFund}
-      />
-      <FrequencySelector value={navFrequency} onChange={setNavFrequency} />
-      <CustomDateRangePicker value={dateRange} onChange={setDateRange} />
-      <ChartTypeSelector value={chartType} onChange={setChartType} />
-
-
-      {loading ? (
-        <p>Loading NAV data…</p>
-      ) : (
-        <NAVChart
-          data={navData}
-          fund={funds.find((f) => f.code === selectedFund)}
-          chartType={chartType}
-        />
-      )}
+    <div hidden={value !== index} {...other}>
+      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
     </div>
   );
-};
+}
 
+const App: React.FC<AppProps> = ({ funds, setFunds }) => {
+  const [tab, setTab] = React.useState(0);
+  const categories = Array.from(new Set(funds.map(f => f.category)));
+
+  return (
+    <Container maxWidth="md" sx={{ mt: 4 }}>
+      <Paper elevation={4} sx={{ p: 2 }}>
+        <Tabs
+          value={tab}
+          onChange={(_, v) => setTab(v)}
+          indicatorColor="primary"
+          textColor="primary"
+          centered
+          sx={{ mb: 2 }}
+        >
+          <Tab label="Chart Dashboard" />
+          <Tab label="Comparison" />
+        </Tabs>
+
+        <FundConfigUploader onConfigUpload={setFunds} />
+
+        <TabPanel value={tab} index={0}>
+          <FundDashboard funds={funds} />
+        </TabPanel>
+        <TabPanel value={tab} index={1}>
+          <ComparisonPage funds={funds} categories={categories} />
+        </TabPanel>
+      </Paper>
+    </Container>
+  );
+};
 
 export default App;
