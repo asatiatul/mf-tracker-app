@@ -9,7 +9,7 @@ type Props = {
 
 const FundSelector: React.FC<Props> = ({ funds, selected, onChange }) => (
   <label>
-    Select Fund:
+    {/* Select Fund: */}
     <select value={selected} onChange={e => onChange(e.target.value)}>
       {funds.map(fund => (
         <option key={fund.code} value={fund.code}>

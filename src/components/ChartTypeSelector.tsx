@@ -7,7 +7,7 @@ type Props = {
 
 const ChartTypeSelector: React.FC<Props> = ({ value, onChange }) => (
   <label>
-    Chart Type:
+    {/* Chart Type: */}
     <select value={value} onChange={e => onChange(e.target.value as any)}>
       <option value="line">Line</option>
       <option value="bar">Bar</option>
