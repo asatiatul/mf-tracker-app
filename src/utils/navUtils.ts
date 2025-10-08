@@ -22,7 +22,7 @@ export function filterAndDownsample(
   });
 
   if (frequency === 'daily') {
-    return filtered;
+    return filtered.sort((a, b) => parseDate(a.date).getTime() - parseDate(b.date).getTime());
   }
 
   if (frequency === 'weekly') {
